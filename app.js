@@ -2,11 +2,12 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var path = require('path');
 var mongojs = require('mongojs');
-var db = mongojs('customerapp', ['users'])
+var db = mongojs('eve', ['invTypes'])
 var ObjectID = mongojs.ObjectID;
 var request = require('request');
 var qs = require('querystring');
 var session = require('express-session');
+var asyncLoop = require('node-async-loop');
 
 var app = express();
 
@@ -155,11 +156,13 @@ app.get('/logout', function(req, res){
 
 app.get('/dashboard', function(req, res){
   if(req.session.logged){
+    console.log(req.session.character.killmails[0].killDetails.victim);
   res.render('callback',{
     character_id:req.session.character.CharacterID,
     character_name:req.session.character.CharacterName,
     char_image_loc: req.session.character.portraits.px64x64,
     access_token: req.session.access_token,
+    char_killmails: req.session.character.killmails,
     callback_url:'logged'
   });
 }else{
@@ -175,63 +178,121 @@ app.get('/callback', function(req, res){
   }
   //else call oauth
   else{
-  const code = req.query.code;
-  const oauthURL = 'https://login.eveonline.com/oauth/token';
-  var oauth = {
-    "grant_type":"authorization_code",
-      "code":code
-  }
-  console.log(JSON.stringify(oauth));
-  //Post with auth code
-  request({
-    headers:{
-      'Authorization': 'Basic NzhlMzRkMDg0NGNhNDczZmFlYjRkZDAyZjhkZjJkYjU6NXYzNGdtcXNUVTJGc2dHbGpCckltMUFZRWp5WEY2dEVvbXBxYUFmRQ==',
-      'Content-Type':'application/json'
-    },
-    uri: oauthURL,
-    body: JSON.stringify(oauth),
-    method:'POST'
-  }, function(err, response, body){
-    var a_token = JSON.parse(body).access_token;
-    req.session.access_token = JSON.parse(body).access_token;
-    console.log(a_token);
-    //Verify and get character
+    const code = req.query.code;
+    const oauthURL = 'https://login.eveonline.com/oauth/token';
+    var oauth = {
+      "grant_type":"authorization_code",
+        "code":code
+    }
+    console.log(JSON.stringify(oauth));
+    //Post with auth code
     request({
       headers:{
-        'Authorization':'Bearer '+a_token
+        'Authorization': 'Basic NzhlMzRkMDg0NGNhNDczZmFlYjRkZDAyZjhkZjJkYjU6NXYzNGdtcXNUVTJGc2dHbGpCckltMUFZRWp5WEY2dEVvbXBxYUFmRQ==',
+        'Content-Type':'application/json'
       },
-      uri:'https://login.eveonline.com/oauth/verify',
-      method:'GET'
+      uri: oauthURL,
+      body: JSON.stringify(oauth),
+      method:'POST'
     }, function(err, response, body){
-      if(!err){
-        //Save Character to session
-        req.session.logged = true;
-        req.session.character = JSON.parse(body);
-        //Get Portrait
-        request({
-          uri:'https://esi.tech.ccp.is/latest/characters/'+req.session.character.CharacterID+'/portrait/?datasource=tranquility',
-          method:'GET'
-        }, function (err, response, body){
-          if(!err){
-            req.session.character.portraits = JSON.parse(body);
-          }
-          else{
-            console.log(err);
-            req.session.character.portraits = '/img/nopic.jpg';
-          }
-          //if no login error, redirect to dashboard
-          res.redirect('/dashboard');
-        });
-    }else{
-      //else render error page
-      res.render('error',{
-        error:err,
-        callback_url:url});
-    }
+      var a_token = JSON.parse(body).access_token;
+      req.session.access_token = JSON.parse(body).access_token;
+      console.log(a_token);
+      //Verify and get character
+      request({
+        headers:{
+          'Authorization':'Bearer '+a_token
+        },
+        uri:'https://login.eveonline.com/oauth/verify',
+        method:'GET'
+      }, function(err, response, body){
+        if(!err){
+          //Save Character to session
+          req.session.logged = true;
+          req.session.character = JSON.parse(body);
+          //Get Portrait
+          request({
+            uri:'https://esi.tech.ccp.is/latest/characters/'+req.session.character.CharacterID+'/portrait/?datasource=tranquility',
+            method:'GET'
+          }, function (err, response, body){
+            if(!err){
+              req.session.character.portraits = JSON.parse(body);
+            }
+            else{
+              console.log(err);
+              req.session.character.portraits = '/img/nopic.jpg';
+            }
+            //if no login error, redirect to dashboard
+            getKillMails();
+          });
+      }else{
+        //else render error page
+        res.render('error',{
+          error:err,
+          callback_url:url});
+      }
+      });
     });
-  });
-}
-})
+  }
+  function getKillMails(){
+  request({
+    uri:'https://esi.tech.ccp.is/latest/characters/'+req.session.character.CharacterID+'/killmails/recent/?datasource=tranquility&max_count=10&token='+req.session.access_token,
+    method:'GET'
+  }, function (err, response, body){
+    req.session.character.killmails = JSON.parse(body);
+    let i=0;
+        asyncLoop(req.session.character.killmails, function(killmail, next){
+          //console.log(killmail);
+          //console.log(killmail.killmail_id);
+          request({
+           uri:'https://esi.tech.ccp.is/latest/killmails/'+killmail.killmail_id+'/'+killmail.killmail_hash+'/?datasource=tranquility',
+           method:'GET'
+         }, function (err, response, body){
+           if(!err){
+             killmail.killDetails = JSON.parse(body);
+              db.invTypes.findOne({typeID:killmail.killDetails.victim.ship_type_id.toString()}, function(err, doc) {
+               if(!err){
+                 killmail.killDetails.victim.ship_name = doc.typeName;
+                 //console.log(req.session.character.killmails.length);
+                 //console.log(killmail.killDetails.victim.ship_name);
+                 if(i+1==req.session.character.killmails.length){
+                  res.redirect('/dashboard');
+                 }
+                 i++;
+               }else{
+                 console.log(err);
+               }
+
+             });
+             //res.redirect('/dashboard');
+           }else{
+             console.log(err);
+             res.render('error',{
+               error:err,
+               callback_url:url});
+           }
+         })
+
+         next();
+       }, function (err){
+         if(err){
+           console.log(err);
+           return;
+         }
+       });
+          //console.log(req.session.character.killmails[i]);
+        }
+    )}
+    /*req.session.character.killmails.forEach(function(killmail){
+      request({
+        uri:'https://esi.tech.ccp.is/latest/killmails/'+killmail.killmail_id+'/'+killmail.killmail_hash+'/?datasource=tranquility',
+        method:'GET'
+      }, function (err, response, body){
+        console.log(JSON.parse(body));
+      })
+    });*/
+  })
+
 
 app.listen(3000, function(){
   console.log('Server started on port 3000');

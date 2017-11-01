@@ -4,6 +4,16 @@
     <div class="col-md-8 col-sm-8">
       <strong><%= character_id %></strong>
       <strong><%= character_name %></strong>
+      <br>
+      <% if (char_killmails !== 'undefined' && char_killmails != null){ %>
+        <ul class="list-group">
+          <% char_killmails.forEach(function (killmail){  %>
+            <li class="list-group-item">
+              <%= killmail.killDetails.victim.ship_name %> |  <%= killmail.killmail_hash %>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
     </div>
     <% include partials/sidebar %>
 

@@ -13,6 +13,7 @@
     "express-validator": "^4.2.1",
     "gojs": "^1.7.27",
     "mongojs": "^2.4.1",
+    "node-async-loop": "^1.2.2",
     "querystring": "^0.2.0",
     "request": "^2.83.0",
     "require": "^2.4.20"
