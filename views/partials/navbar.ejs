@@ -1,0 +1,31 @@
+<nav class="navbar navbar-inverse">
+            <div class="container">
+                <div class="navbar-header">
+
+                    <!-- Branding Image -->
+                    <a class="navbar-brand" href="/">
+                        Eve Test App
+                    </a>
+                </div>
+
+                <div class="collapse navbar-collapse" id="app-navbar-collapse">
+                    <!-- Left Side Of Navbar -->
+                  <ul class="nav navbar-nav">
+                        &nbsp;
+                  </ul>
+                <ul class="nav navbar-nav">
+                  <li><a href="/about">About</a></li>
+                  <li><a href="/contact">Contact</a></li>
+                </ul>
+                  <ul class="nav navbar-nav navbar-right">
+                    <li>
+                      <% if(callback_url != 'logged'){%>
+                        <a href="<%=callback_url%>" ><img src="img/EVE_SSO_Login_Buttons_Small_White.png"></a></li>
+                      <% } else { %>
+                        <a href="/dashboard"><strong><%=character_name%></strong></a></li>
+                        <li><a href="/logout">Log out</a></li>
+                        <% } %>
+                </ul>
+                </div>
+            </div>
+        </nav>
