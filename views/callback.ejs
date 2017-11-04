@@ -1,24 +1,35 @@
 <% include partials/header %>
 <% include partials/navbar %>
   <div class="container">
-    <div class="col-md-8 col-sm-8">
+    <div class="col-md-8">
       <strong><%= character_id %></strong>
       <strong><%= character_name %></strong>
       <br>
       <% if (char_killmails !== 'undefined' && char_killmails != null){ %>
-        <ul class="list-group">
-          <% char_killmails.forEach(function (killmail){  %>
-            <li class="list-group-item">
-              <%= killmail.killDetails.victim.ship_name %> |  <%= killmail.killmail_hash %>
-            </li>
-          <% }) %>
-        </ul>
+        <table class="table table-striped table-hover" id="killmails">
+          <thead>
+            <tr>
+              <th>Ship</th>
+              <th>Victim</th>
+              <th>Killing Blow</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% char_killmails.forEach(function (killmail){  %>
+              <tr data-id="<%=killmail.killmail_id%>" data-hash="<%=killmail.killmail_hash%>"> 
+                <td><%= killmail.killDetails.victim.ship_name %></td>
+                <td><%= killmail.killmail_hash %></td>
+                <td>Killing Blow</td>
+                <td><%= killmail.killDetails.killmail_time %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
       <% } %>
     </div>
     <% include partials/sidebar %>
 
 </div>
-<script type="text/javascript" src="js/sidebar.js">
 
-</script>
 <% include partials/footer %>

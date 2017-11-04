@@ -1,0 +1,16 @@
+<% include partials/header %>
+<% include partials/navbar %>
+  <div class="container">
+    <div class="col-md-8 col-sm-8">
+      <strong><%= character_id %></strong>
+      <strong><%= character_name %></strong>
+      <br>
+      <ul class="list-group">
+        <li class="list-group-item"><h2>Name: <%= victim.name %></h2></li>
+        <li class="list-group-item"><h2>Ship: <%= ship_type %></h2></li>
+        <li class="list-group-item">Damage Taken: <%= victim.damage_taken %></li>
+        <li class="list-group-item">Final Blow: <%= final_blow.name %></li>
+      </ul>
+    </div>
+  </div>
+<% include partials/footer %>

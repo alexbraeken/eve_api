@@ -156,7 +156,7 @@ app.get('/logout', function(req, res){
 
 app.get('/dashboard', function(req, res){
   if(req.session.logged){
-    console.log(req.session.character.killmails[0].killDetails.victim);
+    console.log(req.session.character.killmails[0].killDetails.killmail_time);
   res.render('callback',{
     character_id:req.session.character.CharacterID,
     character_name:req.session.character.CharacterName,
@@ -165,6 +165,69 @@ app.get('/dashboard', function(req, res){
     char_killmails: req.session.character.killmails,
     callback_url:'logged'
   });
+}else{
+  res.redirect('/');
+}
+})
+
+app.get('/killmail', function(req, res){
+  if(req.session.logged){
+    let killmailID=req.query.id;
+    let killmailHash=req.query.hash;
+    console.log(killmailID+' '+killmailHash);
+
+    request({
+     uri:'https://esi.tech.ccp.is/latest/killmails/'+killmailID+'/'+killmailHash+'/?datasource=tranquility',
+     method:'GET'
+   }, function (err, response, body){
+     let killmailDetails=JSON.parse(body);
+     let victim = killmailDetails.victim;
+     db.invTypes.findOne({typeID:victim.ship_type_id.toString()}, function(err, doc) {
+      if(!err){
+        ship_name = doc.typeName;
+      }
+      else{
+        console.log(err);
+        res.render('error',{
+          error:err,
+          callback_url:url});
+      }
+    });
+    let attacker_ids ='';
+    for(var i=0; i<killmailDetails.attackers.length;i++){
+      attacker_ids += '%2C' + killmailDetails.attackers[i].character_id ;
+
+    }
+    console.log(attacker_ids);
+    request({
+     uri:'https://esi.tech.ccp.is/latest/characters/names/?character_ids='+killmailDetails.victim.character_id+attacker_ids+'&datasource=tranquility',
+     method:'GET'
+    }, function (err, response, body){
+     names = JSON.parse(body);
+     for(j=0;j<killmailDetails.attackers.length;j++){
+        for(i=0;i<names.length;i++){
+          if(names[i].character_id === killmailDetails.victim.character_id){
+            victim.name = names[i].character_name;
+          }
+          if(names[i].character_id ===killmailDetails.attackers[j].character_id ){
+            killmailDetails.attackers[j].name = names[i].character_name;
+            if(killmailDetails.attackers[j].final_blow === true){
+              final_blow_char = killmailDetails.attackers[j];
+              final_blow_char.name = names[i].character_name;
+            }
+          }
+        }
+      }
+      res.render('killmail',{
+          character_id:req.session.character.CharacterID,
+          character_name:req.session.character.CharacterName,
+          victim:victim,
+          final_blow:final_blow_char,
+          ship_type: ship_name,
+          callback_url:'logged'
+        });
+   });
+   });
 }else{
   res.redirect('/');
 }
@@ -242,8 +305,6 @@ app.get('/callback', function(req, res){
     req.session.character.killmails = JSON.parse(body);
     let i=0;
         asyncLoop(req.session.character.killmails, function(killmail, next){
-          //console.log(killmail);
-          //console.log(killmail.killmail_id);
           request({
            uri:'https://esi.tech.ccp.is/latest/killmails/'+killmail.killmail_id+'/'+killmail.killmail_hash+'/?datasource=tranquility',
            method:'GET'
@@ -253,8 +314,7 @@ app.get('/callback', function(req, res){
               db.invTypes.findOne({typeID:killmail.killDetails.victim.ship_type_id.toString()}, function(err, doc) {
                if(!err){
                  killmail.killDetails.victim.ship_name = doc.typeName;
-                 //console.log(req.session.character.killmails.length);
-                 //console.log(killmail.killDetails.victim.ship_name);
+
                  if(i+1==req.session.character.killmails.length){
                   res.redirect('/dashboard');
                  }
@@ -264,7 +324,6 @@ app.get('/callback', function(req, res){
                }
 
              });
-             //res.redirect('/dashboard');
            }else{
              console.log(err);
              res.render('error',{
@@ -280,17 +339,10 @@ app.get('/callback', function(req, res){
            return;
          }
        });
-          //console.log(req.session.character.killmails[i]);
+
         }
     )}
-    /*req.session.character.killmails.forEach(function(killmail){
-      request({
-        uri:'https://esi.tech.ccp.is/latest/killmails/'+killmail.killmail_id+'/'+killmail.killmail_hash+'/?datasource=tranquility',
-        method:'GET'
-      }, function (err, response, body){
-        console.log(JSON.parse(body));
-      })
-    });*/
+
   })
 
 

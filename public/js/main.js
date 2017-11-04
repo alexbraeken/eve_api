@@ -1,7 +1,17 @@
 $(document).ready(function(){
 
-  $('.getAlliances').on('click', getAlliances);
+$('.getAlliances').on('click', getAlliances);
 
+var table = $('#killmails').DataTable();
+
+$('#killmails tbody').on('click', 'tr', function () {
+    let id= $(this).data('id');
+    let hash = $(this).data('hash');
+    var data = table.row( this ).data();
+    data.push(id);
+    data.push(hash);
+    location.href = "/killmail?id="+data[4]+'&hash='+data[5];
+} );
 
 $('body').on('click', '.getName', function(e){
     e.preventDefault();
