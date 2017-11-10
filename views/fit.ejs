@@ -1,0 +1,57 @@
+<% include partials/header %>
+<% include partials/navbar %>
+  <div class="container">
+    <div class="col-md-8 col-sm-8">
+      <strong>Fit</strong>
+      <br>
+      <table class="table table-striped table-hover table-bordered" id="buySellTable">
+        <thead class="thead-inverse">
+          <th><%=name %></th>
+          <th>Item ID</th>
+          <th>
+            <div class="form-group">
+              <label>
+                Sell Order Station
+              </label>
+              <select class="form-control" id="sellOrderStation">
+                <option value="" disabled selected>Select Station</option>
+                <option data-regionID="10000043" data-stationID="60008494">Amarr</option>
+                <option data-regionID="10000002" data-stationID="60011866" >Jita</option>
+              </select>
+            </div>
+          </th>
+          <th>
+            <div class="form-group">
+              <label>
+                Buy Order Station
+              </label>
+              <select class="form-control" id="buyOrderStation">
+                <option value="" disabled selected>Select Station</option>
+                <option data-regionID="10000043" data-stationID="60008494">Amarr</option>
+                <option data-regionID="10000002" data-stationID="60011866" >Jita</option>
+              </select>
+            </div>
+          </th>
+          <th>
+            Relative Difference
+          </th>
+        </thead>
+        <tbody>
+
+            <% for(item in fit){ %>
+              <tr>
+                <% if(fit.hasOwnProperty(item)) {%>
+                <td><%= fit[item].itemName %></td>
+                <td class="itemID"><%= fit[item].id %></td>
+                <td class= "sellTd" data-price=""></td>
+                <td class= "buyTd" data-price=""></td>
+                <td class= "relDiff"></td>
+              </tr>
+              <% } %>
+            <% } %>
+
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% include partials/footer %>

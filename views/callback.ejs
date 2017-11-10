@@ -17,10 +17,10 @@
           </thead>
           <tbody>
             <% char_killmails.forEach(function (killmail){  %>
-              <tr data-id="<%=killmail.killmail_id%>" data-hash="<%=killmail.killmail_hash%>"> 
+              <tr data-id="<%=killmail.killmail_id%>" data-hash="<%=killmail.killmail_hash%>">
                 <td><%= killmail.killDetails.victim.ship_name %></td>
-                <td><%= killmail.killmail_hash %></td>
-                <td>Killing Blow</td>
+                <td><%= killmail.killDetails.victim.name %></td>
+                <td><%= killmail.killDetails.killer_name %></td>
                 <td><%= killmail.killDetails.killmail_time %></td>
               </tr>
             <% }) %>

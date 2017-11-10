@@ -2,7 +2,13 @@
 <% include partials/navbar %>
 <div class="container">
   <div class = "col-md-8 col-sm-8">
-
+    <form action="/fit" method="post">
+      <div class="form-group">
+        <label>Paste Fit Below</label>
+        <textarea name="fit" rows="8" class="form-control"></textarea>
+        <button type="submit" class="btn btn-default">Submit</button>
+      </div>
+    </form>
     <a href="#" class="getAlliances btn btn-default">Get Alliances</a>
     <ul class="result list-group">
       <li class='list-group-item'>ID</li>

@@ -154,9 +154,76 @@ app.get('/logout', function(req, res){
   });
 })
 
+app.get('/market', function(req, res){
+  
+})
+
+app.post('/fit', function(req, res){
+  let name = req.body.fit.match(/\[([^\[\]]+)\]/g);
+  let items =[];
+  let lines = req.body.fit.split('\n');
+  let fit ={};
+  let i = 0;
+  asyncLoop(lines, 1, function(line, next){
+    line = line.replace(/\[([^\[\]]+)\]/g, '');
+    line = line.replace(/,([^,]+)$/gm, '');
+    line = line.replace(/(?:x)+(?:[0-9]+)$/gm, '');
+    line = line.replace(/\r$/gm, '');
+    if(line ===''){
+      next();
+    }else{
+      line = line.trim()
+      items.push(line);
+      console.log(line);
+      db.invTypes.findOne({typeName:line}, function(err, doc) {
+       if(!err){
+         console.log(doc.typeID);
+         fit[i]={
+           id:doc.typeID,
+           itemName:line
+         }
+        }
+        else{
+          fit[i]={
+            id:'Not Found',
+            itemName:line
+          }
+           console.log(err);
+         }
+         i++;
+         next();
+      });
+    }
+  }, function (err){
+    if(err){
+      console.log(err);
+      return;
+    }
+    console.log(fit);
+    console.log('finished');
+    if(req.session.logged){
+      res.render('fit',{
+        character_id:req.session.character.CharacterID,
+        character_name:req.session.character.CharacterName,
+        char_image_loc: req.session.character.portraits.px64x64,
+        access_token: req.session.access_token,
+        char_killmails: req.session.character.killmails,
+        callback_url:'logged',
+        name: name,
+        fit : fit
+      });
+    }else{
+      res.render('fit',{
+        callback_url:url,
+        name: name,
+        fit : fit
+      });
+    }
+  });
+})
+
 app.get('/dashboard', function(req, res){
   if(req.session.logged){
-    console.log(req.session.character.killmails[0].killDetails.killmail_time);
   res.render('callback',{
     character_id:req.session.character.CharacterID,
     character_name:req.session.character.CharacterName,
@@ -218,6 +285,7 @@ app.get('/killmail', function(req, res){
           }
         }
       }
+      //console.log(final_blow_char);
       res.render('killmail',{
           character_id:req.session.character.CharacterID,
           character_name:req.session.character.CharacterName,
@@ -299,7 +367,7 @@ app.get('/callback', function(req, res){
   }
   function getKillMails(){
   request({
-    uri:'https://esi.tech.ccp.is/latest/characters/'+req.session.character.CharacterID+'/killmails/recent/?datasource=tranquility&max_count=10&token='+req.session.access_token,
+    uri:'https://esi.tech.ccp.is/latest/characters/'+req.session.character.CharacterID+'/killmails/recent/?datasource=tranquility&max_count=20&token='+req.session.access_token,
     method:'GET'
   }, function (err, response, body){
     req.session.character.killmails = JSON.parse(body);
@@ -311,14 +379,25 @@ app.get('/callback', function(req, res){
          }, function (err, response, body){
            if(!err){
              killmail.killDetails = JSON.parse(body);
+             for(j=0; j<killmail.killDetails.attackers.length;j++){
+               if(killmail.killDetails.attackers[j].final_blow === true){
+                 killmail.killDetails.killer_id = killmail.killDetails.attackers[j].character_id;
+               }
+             }
               db.invTypes.findOne({typeID:killmail.killDetails.victim.ship_type_id.toString()}, function(err, doc) {
                if(!err){
                  killmail.killDetails.victim.ship_name = doc.typeName;
-
-                 if(i+1==req.session.character.killmails.length){
-                  res.redirect('/dashboard');
-                 }
-                 i++;
+                 request({
+                  uri:'https://esi.tech.ccp.is/latest/characters/names/?character_ids='+killmail.killDetails.victim.character_id+'%2C'+killmail.killDetails.killer_id+'&datasource=tranquility',
+                  method:'GET'
+                }, function (err, response, body){
+                  killmail.killDetails.victim.name = JSON.parse(body)[0].character_name;
+                  killmail.killDetails.killer_name = JSON.parse(body)[1].character_name;
+                  if(i+1==req.session.character.killmails.length){
+                   res.redirect('/dashboard');
+                  }
+                  i++;
+                });
                }else{
                  console.log(err);
                }
