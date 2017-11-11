@@ -41,7 +41,7 @@
             <% for(item in fit){ %>
               <tr>
                 <% if(fit.hasOwnProperty(item)) {%>
-                <td><%= fit[item].itemName %></td>
+                <td class="itemName"><%= fit[item].itemName %></td>
                 <td class="itemID"><%= fit[item].id %></td>
                 <td class= "sellTd" data-price=""></td>
                 <td class= "buyTd" data-price=""></td>
@@ -53,5 +53,16 @@
         </tbody>
       </table>
     </div>
+      <div id="myModal" class="modal">
+        <!-- Modal content -->
+        <div class="modalContent">
+          <span class="close" id="close">&times;</span>
+          <div class="modalBody">
+            <h3 id="modalHeader"></h3>
+            <canvas id="myChart" width="400" height="400"></canvas>
+          </div>
+        </div>
+      </div>
   </div>
+  </script>
 <% include partials/footer %>
